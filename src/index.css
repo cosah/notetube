@@ -472,10 +472,6 @@ select {
   min-width: 0;
 }
 
-.recent-select {
-  flex: 0 1 140px;
-  min-width: 90px;
-}
 
 .video-stage {
   display: flex;

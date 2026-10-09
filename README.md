@@ -17,8 +17,9 @@ npm run build    # static site in dist/
 - **Timestamp index.** Under the video, every timestamp in your notes is listed in time order, and the one you're currently watching is highlighted.
 - **Playback controls.** ±10s and ±30s buttons, play/pause, speed. Shortcuts that work while typing: `Alt+K`, `Alt+J`, `Alt+L`.
 - **Pause while typing.** Optional: the video pauses as you type and resumes once you stop.
+- **New and Notes.** "New" clears the video and the editor. "Notes" lists every saved set of notes so you can reopen or delete them.
 - **Copy link.** Copies a youtu.be link to the current moment.
-- **Autosave and resume.** Notes save as you type. Videos resume from where you left off. The `?v=` URL can be bookmarked, and a "Recent" menu brings back earlier videos.
+- **Autosave and resume.** Notes save as you type. Videos resume from where you left off. The `?v=` URL can be bookmarked.
 - **Export** to `.txt`, `.md`, `.docx`, `.pdf` or Google Docs. Exports include the video title and link, and timestamps stay clickable links to the right moment.
 - **Light, dark or system theme**, built to WCAG 2.2 AA: contrast ≥ 4.5:1 for text and ≥ 3:1 for controls, visible focus, keyboard-operable throughout, 24px minimum targets, reduced-motion support.
 

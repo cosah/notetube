@@ -11,7 +11,6 @@ import {
   X,
 } from 'lucide-react'
 import { useEffect, useId, useRef, useState, type FormEvent, type MouseEvent } from 'react'
-import type { RecentVideo } from '../lib/storage'
 import { readJSON, writeJSON } from '../lib/storage'
 import type { VideoController } from '../lib/videoController'
 import { formatTime, loadYouTubeApi, parseYouTubeUrl, type ParsedVideo } from '../lib/youtube'
@@ -21,7 +20,6 @@ interface Props {
   controller: VideoController
   editor: Editor | null
   video: ParsedVideo | null
-  recent: RecentVideo[]
   clipStart: number | null
   autoPause: boolean
   onAutoPauseChange: (on: boolean) => void
@@ -46,7 +44,7 @@ const PLAYER_ERRORS: Record<number, string> = {
 const keepFocus = (e: MouseEvent) => e.preventDefault()
 
 export function VideoPane(props: Props) {
-  const { controller, editor, video, recent, clipStart, autoPause } = props
+  const { controller, editor, video, clipStart, autoPause } = props
   const hostRef = useRef<HTMLDivElement>(null)
   const [input, setInput] = useState('')
   const [inputError, setInputError] = useState<string | null>(null)
@@ -57,7 +55,7 @@ export function VideoPane(props: Props) {
   const [duration, setDuration] = useState(0)
   const [rate, setRate] = useState(1)
   const [rates, setRates] = useState<number[]>([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2])
-  const ids = { urlError: useId(), recent: useId(), speed: useId(), autoPause: useId() }
+  const ids = { urlError: useId(), speed: useId(), autoPause: useId() }
 
   // Callbacks used inside player events, kept in a ref so the player isn't rebuilt when they change.
   const onTitleRef = useRef(props.onTitle)
@@ -161,7 +159,6 @@ export function VideoPane(props: Props) {
   }
 
   const disabled = !ready
-  const recentOthers = recent.filter((r) => r.id !== videoId)
 
   return (
     <section className="pane video-pane" aria-label="Video">
@@ -184,26 +181,6 @@ export function VideoPane(props: Props) {
         <button type="submit" className="btn btn-primary">
           Load
         </button>
-        {recentOthers.length > 0 && (
-          <>
-            <label htmlFor={ids.recent} className="sr-only">
-              Recent videos
-            </label>
-            <select
-              id={ids.recent}
-              className="recent-select"
-              value=""
-              onChange={(e) => e.target.value && props.onLoadVideo({ id: e.target.value })}
-            >
-              <option value="">Recent…</option>
-              {recentOthers.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.title}
-                </option>
-              ))}
-            </select>
-          </>
-        )}
       </form>
       {inputError && (
         <p id={ids.urlError} className="field-error" role="alert">

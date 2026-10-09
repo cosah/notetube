@@ -37,31 +37,6 @@ export function writeString(key: string, value: string | null): void {
   }
 }
 
-export interface RecentVideo {
-  id: string
-  title: string
-  updatedAt: number
-}
-
-const RECENT_LIMIT = 20
-
-export function getRecentVideos(): RecentVideo[] {
-  return readJSON<RecentVideo[]>('recent', [])
-}
-
-export function touchRecentVideo(id: string, title?: string): RecentVideo[] {
-  const list = getRecentVideos()
-  const existing = list.find((v) => v.id === id)
-  const entry: RecentVideo = {
-    id,
-    title: title || existing?.title || id,
-    updatedAt: Date.now(),
-  }
-  const next = [entry, ...list.filter((v) => v.id !== id)].slice(0, RECENT_LIMIT)
-  writeJSON('recent', next)
-  return next
-}
-
 const SCRATCH = '_scratch'
 
 /** Notes are stored per video; `null` is the scratchpad used before any video is loaded. */
@@ -91,6 +66,26 @@ export function recordNotesSaved(videoId: string | null, title?: string): void {
   writeIndex(index)
 }
 
+export function notesTitle(videoId: string): string {
+  return readIndex()[videoId]?.title ?? ''
+}
+
+/**
+ * Earlier versions kept titles in a separate "recent videos" list. Copy those into the
+ * notes index for videos that have notes, then drop the old list.
+ */
+export function migrateRecentList(): void {
+  const recent = readJSON<{ id: string; title: string; updatedAt: number }[] | null>('recent', null)
+  if (!recent) return
+  const index = readIndex()
+  for (const r of recent) {
+    if (readString(notesKey(r.id)) == null) continue
+    index[r.id] = { title: index[r.id]?.title || (r.title !== r.id ? r.title : undefined), updatedAt: index[r.id]?.updatedAt ?? r.updatedAt }
+  }
+  writeIndex(index)
+  writeString('recent', null)
+}
+
 export function recordNotesTitle(videoId: string, title: string): void {
   const index = readIndex()
   if (!index[videoId] || index[videoId].title === title) return
@@ -107,19 +102,11 @@ export function removeNotesIndexEntry(videoId: string | null): void {
   writeIndex(index)
 }
 
-/** Removes a set of notes. For a video, also forgets its playback position and recent entry. */
+/** Removes a set of notes. For a video, also forgets its playback position. */
 export function removeNotes(videoId: string | null): void {
   writeString(notesKey(videoId), null)
-  const index = readIndex()
-  delete index[videoId ?? SCRATCH]
-  writeIndex(index)
-  if (videoId) {
-    writeString(`pos:${videoId}`, null)
-    writeJSON(
-      'recent',
-      getRecentVideos().filter((v) => v.id !== videoId),
-    )
-  }
+  removeNotesIndexEntry(videoId)
+  if (videoId) writeString(`pos:${videoId}`, null)
 }
 
 /** Plain text of a saved TipTap document, with blocks separated by spaces. */
@@ -148,7 +135,6 @@ export interface SavedNotes {
 /** Every non-empty set of notes in this browser, most recently edited first. */
 export function listSavedNotes(): SavedNotes[] {
   const index = readIndex()
-  const recent = getRecentVideos()
   const result: SavedNotes[] = []
   let keys: string[] = []
   try {
@@ -163,8 +149,8 @@ export function listSavedNotes(): SavedNotes[] {
     const videoId = id === SCRATCH ? null : id
     result.push({
       videoId,
-      title: videoId ? index[id]?.title || recent.find((r) => r.id === id)?.title || 'Untitled video' : 'Scratchpad',
-      updatedAt: index[id]?.updatedAt ?? recent.find((r) => r.id === id)?.updatedAt ?? null,
+      title: videoId ? index[id]?.title || 'Untitled video' : 'Scratchpad',
+      updatedAt: index[id]?.updatedAt ?? null,
       words: text.split(' ').filter(Boolean).length,
       preview: text.slice(0, 160),
     })

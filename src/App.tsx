@@ -17,19 +17,17 @@ import type { ExportFormat } from './lib/exporters'
 import { getClientId, preloadGoogle } from './lib/google'
 import {
   docText,
-  getRecentVideos,
   listSavedNotes,
   notesKey,
+  notesTitle,
   readJSON,
   readString,
   recordNotesSaved,
   recordNotesTitle,
   removeNotes,
   removeNotesIndexEntry,
-  touchRecentVideo,
   writeJSON,
   writeString,
-  type RecentVideo,
 } from './lib/storage'
 import { VideoController } from './lib/videoController'
 import { formatTime, parseYouTubeUrl, videoUrl, type ParsedVideo } from './lib/youtube'
@@ -77,8 +75,7 @@ function loadDocument(editor: Editor, content: JSONContent | null) {
 export default function App() {
   const [controller] = useState(() => new VideoController())
   const [video, setVideo] = useState<ParsedVideo | null>(initialVideo)
-  const [recent, setRecent] = useState<RecentVideo[]>(getRecentVideos)
-  const [title, setTitle] = useState(() => getRecentVideos().find((r) => r.id === video?.id)?.title ?? '')
+  const [title, setTitle] = useState(() => (video ? notesTitle(video.id) : ''))
   const [clipStart, setClipStart] = useState<number | null>(null)
   const [autoPause, setAutoPause] = useState(() => readJSON('auto-pause', false))
   const [saveState, setSaveState] = useState<SaveState>({ status: 'idle' })
@@ -150,7 +147,8 @@ export default function App() {
           return false
         }
         if (autoPauseRef.current && !event.ctrlKey && !event.metaKey && !event.altKey) {
-          if (event.key.length === 1 || event.key === 'Backspace' || event.key === 'Enter') controller.noteTyping()
+          // Enter doesn't count: starting a new line shouldn't pause the video.
+          if (event.key.length === 1 || event.key === 'Backspace') controller.noteTyping()
         }
         return false
       },
@@ -192,7 +190,6 @@ export default function App() {
       setSaveState(ok ? { status: 'saved', at: Date.now() } : { status: 'error' })
       if (!ok) return
       recordNotesSaved(videoId, titleRef.current)
-      if (videoId) setRecent(touchRecentVideo(videoId))
     }
     const onUpdate = () => {
       setSaveState({ status: 'pending' })
@@ -233,18 +230,13 @@ export default function App() {
   const loadVideo = useCallback((v: ParsedVideo) => {
     setVideo(v)
     setClipStart(null)
-    const list = touchRecentVideo(v.id)
-    setRecent(list)
-    setTitle(list.find((r) => r.id === v.id)?.title ?? '')
+    setTitle(notesTitle(v.id))
   }, [])
 
   const onTitle = useCallback(
     (t: string) => {
       setTitle(t)
-      if (videoId) {
-        setRecent(touchRecentVideo(videoId, t))
-        recordNotesTitle(videoId, t)
-      }
+      if (videoId) recordNotesTitle(videoId, t)
     },
     [videoId],
   )
@@ -286,14 +278,12 @@ export default function App() {
 
   const deleteNotes = (id: string | null) => {
     removeNotes(id)
-    setRecent(getRecentVideos())
     // Deleting the notes that are open also clears the editor.
     if (editor && id === videoId) loadDocument(editor, null)
   }
 
   const deleteAllNotes = () => {
     for (const n of listSavedNotes()) removeNotes(n.videoId)
-    setRecent(getRecentVideos())
     if (editor) loadDocument(editor, null)
   }
 
@@ -461,7 +451,6 @@ export default function App() {
               controller={controller}
               editor={editor}
               video={video}
-              recent={recent}
               clipStart={clipStart}
               autoPause={autoPause}
               onAutoPauseChange={(on) => {
