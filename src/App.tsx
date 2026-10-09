@@ -354,6 +354,10 @@ export default function App() {
           <h1>NoteTube</h1>
         </div>
         <div className="header-actions">
+          <nav className="legal-links" aria-label="Legal">
+            <a href="/privacy.html">Privacy</a>
+            <a href="/terms.html">Terms</a>
+          </nav>
           <button type="button" className="btn btn-ghost" onClick={() => setShortcutsOpen(true)} aria-label="Keyboard shortcuts">
             <Keyboard aria-hidden="true" size={17} />
             <span className="hide-narrow">Shortcuts</span>

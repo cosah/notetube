@@ -354,7 +354,24 @@ select {
 
 .header-actions {
   display: flex;
+  align-items: center;
   gap: 4px;
+}
+
+.legal-links {
+  display: flex;
+  gap: 12px;
+  margin-right: 8px;
+  font-size: 13px;
+}
+
+.legal-links a {
+  color: var(--text-muted);
+  text-underline-offset: 2px;
+}
+
+.legal-links a:hover {
+  color: var(--text);
 }
 
 .split-wrap {

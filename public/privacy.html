@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Privacy Policy · NoteTube</title>
+    <meta name="description" content="NoteTube runs entirely in your browser. Your notes stay on your device." />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/legal.css" />
+    <script>
+      try {
+        var t = localStorage.getItem('notetube:theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/"><img src="/favicon.svg" alt="" width="24" height="24" />NoteTube</a>
+      <nav aria-label="Legal">
+        <a href="/privacy.html" aria-current="page">Privacy</a>
+        <a href="/terms.html">Terms</a>
+        <a href="/">Back to the app</a>
+      </nav>
+    </header>
+
+    <main>
+      <h1>Privacy Policy</h1>
+      <p class="updated">Effective October 9, 2026</p>
+
+      <section class="summary" aria-labelledby="summary-heading">
+        <h2 id="summary-heading">The short version</h2>
+        <ul>
+          <li><strong>NoteTube runs entirely in your browser.</strong> There is no NoteTube server, database, or account system.</li>
+          <li><strong>Your notes stay on your device.</strong> They are saved in your browser’s local storage, and NoteTube never receives them.</li>
+          <li><strong>No analytics, ads, or tracking.</strong> NoteTube doesn’t collect, sell, or share personal information.</li>
+          <li><strong>Google is involved in two places:</strong> the embedded YouTube player, and Google Docs export (only if you use it). Google’s own privacy policy applies to those.</li>
+        </ul>
+      </section>
+
+      <h2>Who this applies to</h2>
+      <p>
+        This policy covers the NoteTube web app (the “app”), a tool for watching YouTube videos and taking notes alongside
+        them. The words “we” and “us” refer to the people who operate the app.
+      </p>
+
+      <h2>What stays on your device</h2>
+      <p>
+        NoteTube saves the following in your browser’s <code>localStorage</code> and <code>sessionStorage</code> so the app
+        works the way you left it. This data never leaves your device unless you export it yourself.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <caption class="sr-only">Data stored in your browser</caption>
+          <thead>
+            <tr>
+              <th scope="col">Data</th>
+              <th scope="col">Why</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Your notes, one set per video</td>
+              <td>Autosave, so your notes are there when you come back</td>
+            </tr>
+            <tr>
+              <td>Recently opened video IDs and titles</td>
+              <td>The “Recent” menu</td>
+            </tr>
+            <tr>
+              <td>Last playback position for each video</td>
+              <td>Resuming where you left off</td>
+            </tr>
+            <tr>
+              <td>Preferences: theme, panel sizes, “pause while typing”</td>
+              <td>Remembering your settings</td>
+            </tr>
+            <tr>
+              <td>A Google access token (session storage, only if you export to Google Docs)</td>
+              <td>Avoiding a new sign-in on every export. It expires after about an hour and is cleared when you close the tab.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        You can delete all of this at any time by clearing this site’s data in your browser settings. That also deletes your
+        notes permanently, so export anything you want to keep first.
+      </p>
+      <p>NoteTube does not set cookies.</p>
+
+      <h2>Third-party services</h2>
+
+      <h3>YouTube (Google)</h3>
+      <p>
+        Videos play in YouTube’s embedded player, which loads directly from YouTube. When you load a video, YouTube receives
+        information such as your IP address, the video you’re watching, and your interactions with the player. YouTube may
+        also set its own cookies. This is handled by Google under the
+        <a href="https://policies.google.com/privacy">Google Privacy Policy</a>. By using the player you also agree to the
+        <a href="https://www.youtube.com/t/terms">YouTube Terms of Service</a>.
+      </p>
+
+      <h3>Google sign-in and Google Drive (optional)</h3>
+      <p>
+        If you choose <strong>Export → Google Docs</strong>, you sign in with Google in a popup and grant NoteTube permission
+        to create files in your Google Drive. NoteTube requests only the <code>drive.file</code> permission. That lets it
+        create new files and access only the files it creates, never the rest of your Drive.
+      </p>
+      <p>
+        Your notes then go straight from your browser to Google Drive. They never pass through a NoteTube server. NoteTube
+        doesn’t request or receive your name, email address, or profile.
+      </p>
+      <p>
+        NoteTube’s use and transfer of information received from Google APIs adheres to the
+        <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>,
+        including the Limited Use requirements. The access token is used only to create the document you asked for. It is
+        never stored outside your browser, shared, sold, or used for advertising.
+      </p>
+      <p>
+        You can sign out from the Export menu. You can also remove NoteTube’s access entirely at any time from your
+        <a href="https://myaccount.google.com/permissions">Google Account permissions page</a>.
+      </p>
+
+      <h3>Hosting</h3>
+      <p>
+        The app’s files are served by Vercel. Like any web host, Vercel may process standard request information (such as IP
+        address, browser type, and the time of the request) to deliver the site and keep it secure. NoteTube does not use this
+        information for analytics.
+      </p>
+
+      <h2>Exports</h2>
+      <p>
+        Text, Markdown, Word, and PDF exports are created in your browser and downloaded directly to your device. “Copy link”
+        writes a YouTube link to your clipboard only when you click it.
+      </p>
+
+      <h2>Children</h2>
+      <p>
+        NoteTube is not directed at children under 13, and we don’t knowingly collect personal information from anyone,
+        including children.
+      </p>
+
+      <h2>Changes to this policy</h2>
+      <p>
+        If the way NoteTube handles data changes, we’ll update this page and its effective date. For example, if a server or
+        sync feature were ever added, it would be described here before launch.
+      </p>
+    </main>
+
+    <footer class="site-footer">
+      <p><a href="/terms.html">Terms of Service</a> · <a href="/">Back to NoteTube</a></p>
+    </footer>
+
+    <style>
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+      }
+    </style>
+  </body>
+</html>
