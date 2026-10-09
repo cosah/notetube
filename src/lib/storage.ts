@@ -62,7 +62,123 @@ export function touchRecentVideo(id: string, title?: string): RecentVideo[] {
   return next
 }
 
+const SCRATCH = '_scratch'
+
 /** Notes are stored per video; `null` is the scratchpad used before any video is loaded. */
 export function notesKey(videoId: string | null): string {
-  return `notes:${videoId ?? '_scratch'}`
+  return `notes:${videoId ?? SCRATCH}`
+}
+
+// ----- Saved-notes index (titles and edit times, for the Notes browser) -----
+
+interface NotesMeta {
+  title?: string
+  updatedAt: number
+}
+
+function readIndex(): Record<string, NotesMeta> {
+  return readJSON<Record<string, NotesMeta>>('notes-index', {})
+}
+
+function writeIndex(index: Record<string, NotesMeta>): void {
+  writeJSON('notes-index', index)
+}
+
+export function recordNotesSaved(videoId: string | null, title?: string): void {
+  const index = readIndex()
+  const id = videoId ?? SCRATCH
+  index[id] = { title: title || index[id]?.title, updatedAt: Date.now() }
+  writeIndex(index)
+}
+
+export function recordNotesTitle(videoId: string, title: string): void {
+  const index = readIndex()
+  if (!index[videoId] || index[videoId].title === title) return
+  index[videoId] = { ...index[videoId], title }
+  writeIndex(index)
+}
+
+/** Drops a notes entry from the index only (used when an editor is emptied). */
+export function removeNotesIndexEntry(videoId: string | null): void {
+  const index = readIndex()
+  const id = videoId ?? SCRATCH
+  if (!(id in index)) return
+  delete index[id]
+  writeIndex(index)
+}
+
+/** Removes a set of notes. For a video, also forgets its playback position and recent entry. */
+export function removeNotes(videoId: string | null): void {
+  writeString(notesKey(videoId), null)
+  const index = readIndex()
+  delete index[videoId ?? SCRATCH]
+  writeIndex(index)
+  if (videoId) {
+    writeString(`pos:${videoId}`, null)
+    writeJSON(
+      'recent',
+      getRecentVideos().filter((v) => v.id !== videoId),
+    )
+  }
+}
+
+/** Plain text of a saved TipTap document, with blocks separated by spaces. */
+export function docText(doc: unknown): string {
+  const parts: string[] = []
+  const walk = (node: { text?: string; content?: unknown[] } | null | undefined) => {
+    if (!node) return
+    if (node.text) parts.push(node.text)
+    if (Array.isArray(node.content)) {
+      node.content.forEach((child) => walk(child as typeof node))
+      parts.push(' ')
+    }
+  }
+  walk(doc as { content?: unknown[] })
+  return parts.join('').replace(/\s+/g, ' ').trim()
+}
+
+export interface SavedNotes {
+  videoId: string | null
+  title: string
+  updatedAt: number | null
+  words: number
+  preview: string
+}
+
+/** Every non-empty set of notes in this browser, most recently edited first. */
+export function listSavedNotes(): SavedNotes[] {
+  const index = readIndex()
+  const recent = getRecentVideos()
+  const result: SavedNotes[] = []
+  let keys: string[] = []
+  try {
+    keys = Object.keys(localStorage).filter((k) => k.startsWith(`${PREFIX}notes:`))
+  } catch {
+    return []
+  }
+  for (const fullKey of keys) {
+    const id = fullKey.slice(`${PREFIX}notes:`.length)
+    const text = docText(readJSON<unknown>(`notes:${id}`, null))
+    if (!text) continue
+    const videoId = id === SCRATCH ? null : id
+    result.push({
+      videoId,
+      title: videoId ? index[id]?.title || recent.find((r) => r.id === id)?.title || 'Untitled video' : 'Scratchpad',
+      updatedAt: index[id]?.updatedAt ?? recent.find((r) => r.id === id)?.updatedAt ?? null,
+      words: text.split(' ').filter(Boolean).length,
+      preview: text.slice(0, 160),
+    })
+  }
+  return result.sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0))
+}
+
+/** Approximate bytes NoteTube uses in localStorage (UTF-16, two bytes per character). */
+export function storageBytes(): number {
+  try {
+    return Object.keys(localStorage)
+      .filter((k) => k.startsWith(PREFIX))
+      .reduce((sum, k) => sum + (k.length + (localStorage.getItem(k)?.length ?? 0)) * 2, 0)
+  } catch {
+    return 0
+  }
 }

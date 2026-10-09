@@ -57,7 +57,7 @@ export function VideoPane(props: Props) {
   const [duration, setDuration] = useState(0)
   const [rate, setRate] = useState(1)
   const [rates, setRates] = useState<number[]>([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2])
-  const ids = { url: useId(), urlError: useId(), recent: useId(), speed: useId(), autoPause: useId() }
+  const ids = { urlError: useId(), recent: useId(), speed: useId(), autoPause: useId() }
 
   // Callbacks used inside player events, kept in a ref so the player isn't rebuilt when they change.
   const onTitleRef = useRef(props.onTitle)
@@ -166,11 +166,11 @@ export function VideoPane(props: Props) {
   return (
     <section className="pane video-pane" aria-label="Video">
       <form className="url-bar" onSubmit={submit} noValidate>
-        <label htmlFor={ids.url} className="sr-only">
+        <label htmlFor="video-url" className="sr-only">
           YouTube link
         </label>
         <input
-          id={ids.url}
+          id="video-url"
           type="text"
           inputMode="url"
           autoComplete="off"
@@ -285,19 +285,6 @@ export function VideoPane(props: Props) {
         <div className="control-row" role="group" aria-label="Link the video into your notes">
           <button
             type="button"
-            className="btn btn-primary"
-            onMouseDown={keepFocus}
-            onClick={props.onInsertTimestamp}
-            disabled={disabled || !editor}
-            title="Insert a timestamp at your cursor (Alt+T)"
-            aria-label="Insert timestamp"
-          >
-            <Clock aria-hidden="true" size={16} />
-            Insert timestamp <span className="tabular" aria-hidden="true">{ready ? formatTime(time) : ''}</span>
-          </button>
-
-          <button
-            type="button"
             className="btn"
             onMouseDown={keepFocus}
             onClick={props.onClip}
@@ -329,6 +316,20 @@ export function VideoPane(props: Props) {
             <span className="switch-track" aria-hidden="true" />
             Pause while typing
           </label>
+
+          {/* Last in the row and pushed right, so it sits against the split, closest to the notes. */}
+          <button
+            type="button"
+            className="btn btn-primary insert-ts"
+            onMouseDown={keepFocus}
+            onClick={props.onInsertTimestamp}
+            disabled={disabled || !editor}
+            title="Insert a timestamp at your cursor (Alt+T)"
+            aria-label="Insert timestamp"
+          >
+            <Clock aria-hidden="true" size={16} />
+            Insert timestamp <span className="tabular" aria-hidden="true">{ready ? formatTime(time) : ''}</span>
+          </button>
         </div>
       </div>
 

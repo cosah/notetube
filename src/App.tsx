@@ -1,10 +1,11 @@
 import { EditorState } from '@tiptap/pm/state'
 import { useEditor, type Editor, type JSONContent } from '@tiptap/react'
-import { Keyboard, Monitor, Moon, Sun, X } from 'lucide-react'
+import { FilePlus2, Keyboard, Library, Monitor, Moon, Sun, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Group, Panel, Separator, useGroupRef, type Layout } from 'react-resizable-panels'
 import { ExportMenu } from './components/ExportMenu'
 import { GoogleSetupDialog } from './components/GoogleSetupDialog'
+import { NotesBrowser } from './components/NotesBrowser'
 import { NotesPane, type SaveState } from './components/NotesPane'
 import { ShortcutsDialog } from './components/ShortcutsDialog'
 import { VideoPane } from './components/VideoPane'
@@ -15,10 +16,16 @@ import { useTheme } from './hooks/useTheme'
 import type { ExportFormat } from './lib/exporters'
 import { getClientId, preloadGoogle } from './lib/google'
 import {
+  docText,
   getRecentVideos,
+  listSavedNotes,
   notesKey,
   readJSON,
   readString,
+  recordNotesSaved,
+  recordNotesTitle,
+  removeNotes,
+  removeNotesIndexEntry,
   touchRecentVideo,
   writeJSON,
   writeString,
@@ -79,6 +86,7 @@ export default function App() {
   const [toast, setToast] = useState<Toast | null>(null)
   const [googleOpen, setGoogleOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [notesOpen, setNotesOpen] = useState(false)
   const [googleConfigured, setGoogleConfigured] = useState(() => Boolean(getClientId()))
   const { theme, cycle: cycleTheme } = useTheme()
 
@@ -151,6 +159,8 @@ export default function App() {
 
   // Load the current video's notes, and autosave them (debounced) as they change.
   const prevVideoRef = useRef<string | null | undefined>(undefined)
+  const titleRef = useRef(title)
+  titleRef.current = title
   useEffect(() => {
     if (!editor) return
     const key = notesKey(videoId)
@@ -161,7 +171,8 @@ export default function App() {
     if (prev === null && videoId && !saved && !editor.isEmpty) {
       // Notes typed before any video was loaded move over to the first video.
       writeJSON(key, editor.getJSON())
-      writeString(notesKey(null), null)
+      removeNotes(null)
+      recordNotesSaved(videoId, titleRef.current)
     } else {
       loadDocument(editor, saved)
     }
@@ -170,9 +181,18 @@ export default function App() {
     let timer: number | undefined
     const save = () => {
       timer = undefined
+      // An emptied editor removes its entry rather than keeping a blank one around.
+      if (editor.isEmpty) {
+        writeString(key, null)
+        removeNotesIndexEntry(videoId)
+        setSaveState({ status: 'saved', at: Date.now() })
+        return
+      }
       const ok = writeJSON(key, editor.getJSON())
       setSaveState(ok ? { status: 'saved', at: Date.now() } : { status: 'error' })
-      if (ok && videoId) setRecent(touchRecentVideo(videoId))
+      if (!ok) return
+      recordNotesSaved(videoId, titleRef.current)
+      if (videoId) setRecent(touchRecentVideo(videoId))
     }
     const onUpdate = () => {
       setSaveState({ status: 'pending' })
@@ -221,10 +241,61 @@ export default function App() {
   const onTitle = useCallback(
     (t: string) => {
       setTitle(t)
-      if (videoId) setRecent(touchRecentVideo(videoId, t))
+      if (videoId) {
+        setRecent(touchRecentVideo(videoId, t))
+        recordNotesTitle(videoId, t)
+      }
     },
     [videoId],
   )
+
+  // ----- New / Notes browser -----
+
+  /** Unloads the video and blanks the editor. Video notes stay saved; only scratchpad text is discarded. */
+  const startFresh = () => {
+    if (!editor) return
+    const scratchText = videoId ? docText(readJSON(notesKey(null), null)) : editor.getText().trim()
+    if (
+      scratchText &&
+      !window.confirm('Clear the scratchpad? These notes aren’t attached to a video, so they can’t be recovered.')
+    ) {
+      return
+    }
+    removeNotes(null)
+    setClipStart(null)
+    if (videoId) {
+      // Switching to no video flushes this video's notes, then loads the (now empty) scratchpad.
+      setVideo(null)
+      setTitle('')
+      showToast({ tone: 'info', message: 'Started fresh. Your notes for that video are saved under Notes.' })
+    } else {
+      loadDocument(editor, null)
+    }
+    requestAnimationFrame(() => document.getElementById('video-url')?.focus())
+  }
+
+  const openNotes = (id: string | null) => {
+    if (id === videoId) return
+    if (id) loadVideo({ id })
+    else {
+      setVideo(null)
+      setTitle('')
+      setClipStart(null)
+    }
+  }
+
+  const deleteNotes = (id: string | null) => {
+    removeNotes(id)
+    setRecent(getRecentVideos())
+    // Deleting the notes that are open also clears the editor.
+    if (editor && id === videoId) loadDocument(editor, null)
+  }
+
+  const deleteAllNotes = () => {
+    for (const n of listSavedNotes()) removeNotes(n.videoId)
+    setRecent(getRecentVideos())
+    if (editor) loadDocument(editor, null)
+  }
 
   const insertTs = () => {
     if (!editor || !videoId || !controller.ready) return
@@ -414,12 +485,35 @@ export default function App() {
               saveState={saveState}
               title={displayTitle}
               exportControl={
-                <ExportMenu
-                  busy={busy}
-                  googleConfigured={googleConfigured}
-                  onExport={doExport}
-                  onGoogleSetup={() => setGoogleOpen(true)}
-                />
+                <>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={startFresh}
+                    aria-label="New"
+                    title="Start fresh: clear the video and notes (saved video notes stay under Notes)"
+                  >
+                    <FilePlus2 aria-hidden="true" size={16} />
+                    <span className="hide-narrow">New</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => setNotesOpen(true)}
+                    aria-label="Notes"
+                    aria-haspopup="dialog"
+                    title="Browse, open or delete your saved notes"
+                  >
+                    <Library aria-hidden="true" size={16} />
+                    <span className="hide-narrow">Notes</span>
+                  </button>
+                  <ExportMenu
+                    busy={busy}
+                    googleConfigured={googleConfigured}
+                    onExport={doExport}
+                    onGoogleSetup={() => setGoogleOpen(true)}
+                  />
+                </>
               }
             />
           </Panel>
@@ -444,6 +538,14 @@ export default function App() {
 
       <GoogleSetupDialog open={googleOpen} onClose={() => setGoogleOpen(false)} onSaved={setGoogleConfigured} />
       <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      <NotesBrowser
+        open={notesOpen}
+        currentVideoId={videoId}
+        onClose={() => setNotesOpen(false)}
+        onOpenNotes={openNotes}
+        onDeleteNotes={deleteNotes}
+        onDeleteAll={deleteAllNotes}
+      />
     </div>
   )
 }

@@ -7,10 +7,11 @@ interface Props {
   onClose: () => void
   children: ReactNode
   footer?: ReactNode
+  wide?: boolean
 }
 
 /** Native <dialog>: modal focus trapping, Escape to close and focus return come from the browser. */
-export function Dialog({ open, title, onClose, children, footer }: Props) {
+export function Dialog({ open, title, onClose, children, footer, wide }: Props) {
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
 
@@ -24,7 +25,7 @@ export function Dialog({ open, title, onClose, children, footer }: Props) {
   return (
     <dialog
       ref={ref}
-      className="dialog"
+      className={wide ? 'dialog dialog-wide' : 'dialog'}
       aria-labelledby={titleId}
       onClose={onClose}
       onClick={(e) => {

@@ -544,6 +544,10 @@ select {
   gap: 6px;
 }
 
+.insert-ts {
+  margin-left: auto;
+}
+
 .btn-play {
   width: 40px;
   border-radius: 999px;
@@ -1134,6 +1138,150 @@ select {
   border-radius: 4px;
   background: var(--surface);
   user-select: all;
+}
+
+.dialog-wide {
+  width: min(680px, calc(100vw - 32px));
+}
+
+.btn-danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--on-danger);
+  font-weight: 600;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--danger);
+  filter: brightness(0.92);
+}
+
+.confirm-text {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Notes browser */
+.notes-empty {
+  color: var(--text-muted);
+}
+
+.notes-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.notes-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--border);
+  border-left: 3px solid transparent;
+}
+
+.notes-row:last-child {
+  border-bottom: 0;
+}
+
+.notes-row[aria-current='true'] {
+  border-left-color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 6px;
+}
+
+.notes-thumb {
+  flex: none;
+  width: 112px;
+  height: 63px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: var(--surface-2);
+}
+
+.notes-thumb-scratch {
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+}
+
+.notes-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.notes-open {
+  display: block;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-weight: 600;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notes-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 !important;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.badge {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.notes-preview {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0 !important;
+  font-size: 14px;
+}
+
+.notes-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+.storage-used {
+  color: var(--text-muted);
+  font-size: 13px;
+  align-self: center;
+}
+
+@media (max-width: 520px) {
+  .notes-thumb {
+    width: 72px;
+    height: 41px;
+  }
+
+  .notes-row {
+    flex-wrap: wrap;
+  }
+
+  .notes-actions {
+    margin-left: auto;
+  }
 }
 
 .shortcuts {
