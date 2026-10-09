@@ -25,3 +25,6 @@ dist-ssr
 
 # Playwright MCP output
 .playwright-mcp
+
+.vercel
+.env*
