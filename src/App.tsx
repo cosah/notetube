@@ -13,7 +13,7 @@ import { insertTimestamp } from './editor/timestamps'
 import { useMediaQuery } from './hooks/useMediaQuery'
 import { useTheme } from './hooks/useTheme'
 import type { ExportFormat } from './lib/exporters'
-import { preloadGoogle } from './lib/google'
+import { getClientId, preloadGoogle } from './lib/google'
 import {
   getRecentVideos,
   notesKey,
@@ -79,7 +79,7 @@ export default function App() {
   const [toast, setToast] = useState<Toast | null>(null)
   const [googleOpen, setGoogleOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
-  const [googleConfigured, setGoogleConfigured] = useState(() => Boolean(readString('google-client-id')))
+  const [googleConfigured, setGoogleConfigured] = useState(() => Boolean(getClientId()))
   const { theme, cycle: cycleTheme } = useTheme()
 
   const videoId = video?.id ?? null

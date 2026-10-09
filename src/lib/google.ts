@@ -1,8 +1,17 @@
-// Google Docs export, fully client-side: the user supplies their own OAuth Client ID
-// (stored in localStorage), Google Identity Services issues a short-lived access token
-// (kept in memory only), and the Drive API converts uploaded HTML into a Google Doc.
+// Google Docs export, fully client-side. The app's OAuth Client ID comes from
+// VITE_GOOGLE_CLIENT_ID (client IDs aren't secret); if that isn't set, users can supply
+// their own in the setup dialog. Google Identity Services issues a short-lived access
+// token, kept in sessionStorage for this tab only, and the Drive API converts uploaded
+// HTML into a Google Doc.
 
 import { readString, writeString } from './storage'
+
+const BUILT_IN_CLIENT_ID = (import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '').trim()
+
+/** True when the deployment ships its own Client ID, so users only need to sign in. */
+export const hasBuiltInClientId = BUILT_IN_CLIENT_ID !== ''
+
+const TOKEN_KEY = 'notetube:google-token'
 
 const GIS_SRC = 'https://accounts.google.com/gsi/client'
 const SCOPE = 'https://www.googleapis.com/auth/drive.file'
@@ -34,16 +43,37 @@ declare global {
   }
 }
 
+type Token = { value: string; expiresAt: number }
+
 let gisPromise: Promise<GoogleOAuth2> | null = null
-let token: { value: string; expiresAt: number } | null = null
+let token: Token | null = loadToken()
+
+function loadToken(): Token | null {
+  try {
+    const t = JSON.parse(sessionStorage.getItem(TOKEN_KEY) ?? 'null') as Token | null
+    return t && t.expiresAt > Date.now() ? t : null
+  } catch {
+    return null
+  }
+}
+
+function saveToken(t: Token | null): void {
+  token = t
+  try {
+    if (t) sessionStorage.setItem(TOKEN_KEY, JSON.stringify(t))
+    else sessionStorage.removeItem(TOKEN_KEY)
+  } catch {
+    // ignore: the token just won't survive a reload
+  }
+}
 
 export function getClientId(): string {
-  return readString('google-client-id') ?? ''
+  return BUILT_IN_CLIENT_ID || readString('google-client-id') || ''
 }
 
 export function setClientId(id: string): void {
   writeString('google-client-id', id.trim() || null)
-  token = null
+  saveToken(null)
 }
 
 export function isSignedIn(): boolean {
@@ -52,7 +82,7 @@ export function isSignedIn(): boolean {
 
 export function signOut(): void {
   if (token) window.google?.accounts?.oauth2?.revoke(token.value)
-  token = null
+  saveToken(null)
 }
 
 /** Loads Google Identity Services. Call early so the sign-in popup can open within the click. */
@@ -93,10 +123,10 @@ async function getAccessToken(): Promise<string> {
           reject(new Error(resp.error_description || resp.error || 'Google sign-in was not completed.'))
           return
         }
-        token = {
+        saveToken({
           value: resp.access_token,
           expiresAt: Date.now() + (resp.expires_in ?? 3600) * 1000,
-        }
+        })
         resolve(resp.access_token)
       },
       error_callback: (err) => {
@@ -136,7 +166,7 @@ export async function createGoogleDoc(title: string, html: string): Promise<stri
   )
 
   if (!res.ok) {
-    if (res.status === 401) token = null
+    if (res.status === 401 || res.status === 403) saveToken(null)
     let detail = ''
     try {
       detail = (await res.json())?.error?.message ?? ''
@@ -145,6 +175,9 @@ export async function createGoogleDoc(title: string, html: string): Promise<stri
     }
     if (res.status === 403 && /has not been used|disabled/i.test(detail)) {
       throw new Error('The Google Drive API is not enabled for your Cloud project. Enable it and try again.')
+    }
+    if (res.status === 403 && /insufficient/i.test(detail)) {
+      throw new Error('Google Drive access wasn’t granted. Try again and tick the box allowing NoteTube to create files.')
     }
     throw new Error(`Google Drive rejected the upload (${res.status}). ${detail}`.trim())
   }

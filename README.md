@@ -24,12 +24,16 @@ npm run build    # static site in dist/
 
 ## Google Docs export
 
-Each user brings their own Google OAuth Client ID. It is stored only in their browser, and the access token stays in memory. The app asks for the `drive.file` scope only, so it can see only the files it creates. Open **Export → Google Docs setup…** for step-by-step instructions. In short:
+Users choose **Export → Google Docs**, sign in with Google in a popup, and the doc opens in Drive. Everything runs in the browser: Google Identity Services issues a one-hour access token, which is kept only for that browser tab. The app asks for the `drive.file` scope only, so it can see only the files it creates.
+
+The deployment provides one OAuth Client ID through `VITE_GOOGLE_CLIENT_ID`. Client IDs are public identifiers, not secrets. To create one:
 
 1. Create a Google Cloud project and enable the **Google Drive API**.
-2. Configure the OAuth consent screen (External) and add yourself as a test user.
-3. Create an OAuth client of type **Web application**, with this site's origin (e.g. `http://localhost:5173`) as an authorized JavaScript origin.
-4. Paste the Client ID into the setup dialog.
+2. Configure the OAuth consent screen (External). While the app is in **Testing**, only the test users you list can sign in. Publish it to let anyone sign in.
+3. Create an OAuth client of type **Web application**. Add every origin the app runs on under *Authorized JavaScript origins*, e.g. `http://localhost:5173` and `https://notetube-teal.vercel.app`.
+4. Set the ID locally in `.env.local` (see `.env.example`), and on Vercel with `vercel env add VITE_GOOGLE_CLIENT_ID`. Then redeploy.
+
+If `VITE_GOOGLE_CLIENT_ID` isn't set, the app falls back to **Export → Google Docs setup…**, where each user pastes their own Client ID.
 
 ## Stack
 

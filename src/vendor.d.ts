@@ -2,6 +2,11 @@ interface Window {
   onYouTubeIframeAPIReady?: () => void
 }
 
+interface ImportMetaEnv {
+  /** OAuth Client ID for Google Docs export. Optional: without it users supply their own. */
+  readonly VITE_GOOGLE_CLIENT_ID?: string
+}
+
 declare module 'turndown-plugin-gfm' {
   import type TurndownService from 'turndown'
   export const gfm: TurndownService.Plugin

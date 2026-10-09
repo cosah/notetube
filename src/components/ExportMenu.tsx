@@ -1,6 +1,7 @@
-import { ChevronDown, Download, FileCode, FileText, FileType, Loader2, Settings, type LucideIcon } from 'lucide-react'
+import { ChevronDown, Download, FileCode, FileText, FileType, Loader2, LogOut, Settings, type LucideIcon } from 'lucide-react'
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 import type { ExportFormat } from '../lib/exporters'
+import { hasBuiltInClientId, isSignedIn, signOut } from '../lib/google'
 
 interface Props {
   busy: ExportFormat | null
@@ -90,19 +91,40 @@ export function ExportMenu({ busy, googleConfigured, onExport, onGoogleSetup }: 
             </button>
           </li>
         ))}
-        <li className="export-sep" aria-hidden="true" />
-        <li>
-          <button
-            type="button"
-            onClick={() => {
-              close(false)
-              onGoogleSetup()
-            }}
-          >
-            <Settings aria-hidden="true" size={16} />
-            <span className="export-label">Google Docs setup…</span>
-          </button>
-        </li>
+        {!hasBuiltInClientId && (
+          <>
+            <li className="export-sep" aria-hidden="true" />
+            <li>
+              <button
+                type="button"
+                onClick={() => {
+                  close(false)
+                  onGoogleSetup()
+                }}
+              >
+                <Settings aria-hidden="true" size={16} />
+                <span className="export-label">Google Docs setup…</span>
+              </button>
+            </li>
+          </>
+        )}
+        {hasBuiltInClientId && open && isSignedIn() && (
+          <>
+            <li className="export-sep" aria-hidden="true" />
+            <li>
+              <button
+                type="button"
+                onClick={() => {
+                  signOut()
+                  close()
+                }}
+              >
+                <LogOut aria-hidden="true" size={16} />
+                <span className="export-label">Sign out of Google</span>
+              </button>
+            </li>
+          </>
+        )}
       </ul>
     </div>
   )

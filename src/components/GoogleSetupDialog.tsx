@@ -59,7 +59,7 @@ export function GoogleSetupDialog({ open, onClose, onSaved }: Props) {
     >
       <p>
         NoteTube has no server, so Google Docs export uses <strong>your own</strong> Google OAuth Client ID. It is stored
-        only in this browser. Sign-in tokens are kept in memory and expire after an hour. NoteTube can only see files it
+        only in this browser. The sign-in token is kept only for this browser tab and expires after an hour. NoteTube can only see files it
         creates (the <code>drive.file</code> scope).
       </p>
       <details className="setup-steps">
