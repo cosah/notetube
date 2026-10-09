@@ -1,10 +1,12 @@
 import { EditorState } from '@tiptap/pm/state'
 import { useEditor, type Editor, type JSONContent } from '@tiptap/react'
-import { FilePlus2, Keyboard, Library, Monitor, Moon, Sun, X } from 'lucide-react'
+import { FilePlus2, Keyboard, Library, Monitor, Moon, Share, Sun, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Group, Panel, Separator, useGroupRef, type Layout } from 'react-resizable-panels'
 import { ExportMenu } from './components/ExportMenu'
+import { GitHubIcon } from './components/GitHubIcon'
 import { GoogleSetupDialog } from './components/GoogleSetupDialog'
+import { ImportDialog, type ImportMode } from './components/ImportDialog'
 import { NotesBrowser } from './components/NotesBrowser'
 import { NotesPane, type SaveState } from './components/NotesPane'
 import { ShortcutsDialog } from './components/ShortcutsDialog'
@@ -30,6 +32,7 @@ import {
   writeString,
 } from './lib/storage'
 import { VideoController } from './lib/videoController'
+import { createShareLink, isShareHash, LONG_LINK_CHARS, readShareHash, type SharedNote } from './lib/share'
 import { formatTime, parseYouTubeUrl, videoUrl, type ParsedVideo } from './lib/youtube'
 
 interface Toast {
@@ -287,6 +290,97 @@ export default function App() {
     if (editor) loadDocument(editor, null)
   }
 
+  // ----- Share links -----
+
+  /** The saved (or, for the open notes, live) document for a video or the scratchpad. */
+  const notesDoc = (id: string | null): JSONContent | null =>
+    id === videoId && editor ? editor.getJSON() : readJSON<JSONContent | null>(notesKey(id), null)
+
+  const shareNotes = (id: string | null) => {
+    const doc = notesDoc(id)
+    if (!doc || !docText(doc)) {
+      showToast({ tone: 'error', message: 'There’s nothing to share yet. Write some notes first.' })
+      return
+    }
+    const linkPromise = createShareLink({ videoId: id, title: id === videoId ? title : notesTitle(id ?? ''), doc })
+    const done = (link: string) => {
+      const long = link.length > LONG_LINK_CHARS
+      showToast({
+        tone: 'info',
+        message: long
+          ? `Share link copied. It’s long (${link.length.toLocaleString()} characters), so some apps may cut it off. If it won’t open, export the notes instead.`
+          : 'Share link copied. Anyone with the link can read these notes.',
+      })
+    }
+    const fallback = async () => {
+      const link = await linkPromise
+      try {
+        await navigator.clipboard.writeText(link)
+        done(link)
+      } catch {
+        window.prompt('Copy this share link:', link)
+      }
+    }
+    // Hand the clipboard a promise while still inside the click, so browsers that require
+    // a user gesture (Safari) accept the copy even though compression is async.
+    if (typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write) {
+      const blob = linkPromise.then((l) => new Blob([l], { type: 'text/plain' }))
+      navigator.clipboard
+        .write([new ClipboardItem({ 'text/plain': blob })])
+        .then(() => linkPromise.then(done))
+        .catch(fallback)
+    } else {
+      fallback()
+    }
+  }
+
+  // Opening the app from a share link (or pasting one into the address bar).
+  const [incoming, setIncoming] = useState<SharedNote | null>(null)
+  useEffect(() => {
+    const check = () => {
+      const { hash } = window.location
+      if (!isShareHash(hash)) return
+      // Drop the fragment so a reload doesn't ask again.
+      window.history.replaceState(null, '', window.location.pathname + window.location.search)
+      readShareHash(hash)
+        .then(setIncoming)
+        .catch((err: Error) => showToast({ tone: 'error', message: err.message }))
+    }
+    check()
+    window.addEventListener('hashchange', check)
+    return () => window.removeEventListener('hashchange', check)
+  }, [showToast])
+
+  const incomingHasExisting = incoming ? Boolean(docText(notesDoc(incoming.videoId))) : false
+
+  const importShared = (mode: ImportMode) => {
+    if (!incoming) return
+    const { videoId: id, title: sharedTitle, doc: shared } = incoming
+    const mine = notesDoc(id)
+    const doc: JSONContent =
+      mode === 'append' && mine && docText(mine)
+        ? { type: 'doc', content: [...(mine.content ?? []), { type: 'horizontalRule' }, ...(shared.content ?? [])] }
+        : shared
+    writeJSON(notesKey(id), doc)
+    recordNotesSaved(id, sharedTitle)
+    setIncoming(null)
+
+    if (id === videoId) {
+      // Already open: swap the editor contents directly.
+      if (editor) loadDocument(editor, doc)
+    } else if (id) {
+      loadVideo({ id })
+    } else {
+      setVideo(null)
+      setTitle('')
+      setClipStart(null)
+    }
+    showToast({
+      tone: 'info',
+      message: mode === 'append' ? 'Shared notes added below yours.' : 'Shared notes opened. A copy is saved in this browser.',
+    })
+  }
+
   const insertTs = () => {
     if (!editor || !videoId || !controller.ready) return
     insertTimestamp(editor, videoId, controller.time())
@@ -418,6 +512,9 @@ export default function App() {
           <nav className="legal-links" aria-label="Legal">
             <a href="/privacy.html">Privacy</a>
             <a href="/terms.html">Terms</a>
+            <a href="https://github.com/cosah/notetube" className="github-link" aria-label="NoteTube on GitHub" title="NoteTube on GitHub">
+              <GitHubIcon size={18} />
+            </a>
           </nav>
           <button type="button" className="btn btn-ghost" onClick={() => setShortcutsOpen(true)} aria-label="Keyboard shortcuts">
             <Keyboard aria-hidden="true" size={17} />
@@ -496,6 +593,16 @@ export default function App() {
                     <Library aria-hidden="true" size={16} />
                     <span className="hide-narrow">Notes</span>
                   </button>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => shareNotes(videoId)}
+                    aria-label="Share"
+                    title="Copy a link that shares these notes"
+                  >
+                    <Share aria-hidden="true" size={16} />
+                    <span className="hide-narrow">Share</span>
+                  </button>
                   <ExportMenu
                     busy={busy}
                     googleConfigured={googleConfigured}
@@ -534,6 +641,13 @@ export default function App() {
         onOpenNotes={openNotes}
         onDeleteNotes={deleteNotes}
         onDeleteAll={deleteAllNotes}
+        onShareNotes={shareNotes}
+      />
+      <ImportDialog
+        note={incoming}
+        hasExisting={incomingHasExisting}
+        onCancel={() => setIncoming(null)}
+        onImport={importShared}
       />
     </div>
   )

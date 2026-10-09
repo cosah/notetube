@@ -18,6 +18,7 @@ npm run build    # static site in dist/
 - **Playback controls.** ±10s and ±30s buttons, play/pause, speed. Shortcuts that work while typing: `Alt+K`, `Alt+J`, `Alt+L`.
 - **Pause while typing.** Optional: the video pauses as you type and resumes once you stop.
 - **New and Notes.** "New" clears the video and the editor. "Notes" lists every saved set of notes so you can reopen or delete them.
+- **Share links.** "Share" copies a link that carries the whole note, compressed into the part of the URL after `#`, which never reaches a server. Opening the link previews the note and saves a copy, either added below your existing notes or replacing them.
 - **Copy link.** Copies a youtu.be link to the current moment.
 - **Autosave and resume.** Notes save as you type. Videos resume from where you left off. The `?v=` URL can be bookmarked.
 - **Export** to `.txt`, `.md`, `.docx`, `.pdf` or Google Docs. Exports include the video title and link, and timestamps stay clickable links to the right moment.

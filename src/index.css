@@ -374,6 +374,23 @@ select {
   color: var(--text);
 }
 
+.legal-links {
+  align-items: center;
+}
+
+/* 24px target (WCAG 2.5.8) around an 18px mark */
+.github-link {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+}
+
+.github-link:hover {
+  background: var(--surface-2);
+}
+
 .split-wrap {
   min-height: 0;
 }
@@ -1257,6 +1274,25 @@ select {
   align-items: center;
   gap: 6px;
   flex: none;
+}
+
+.share-preview {
+  display: flex;
+  gap: 12px;
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.share-title {
+  margin: 0 !important;
+  font-weight: 600;
+}
+
+.share-conflict {
+  font-weight: 600;
 }
 
 .storage-used {

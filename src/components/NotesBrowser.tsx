@@ -1,4 +1,4 @@
-import { NotebookPen, Trash2 } from 'lucide-react'
+import { NotebookPen, Share, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { listSavedNotes, storageBytes, type SavedNotes } from '../lib/storage'
 import { Dialog } from './Dialog'
@@ -10,6 +10,7 @@ interface Props {
   onOpenNotes: (videoId: string | null) => void
   onDeleteNotes: (videoId: string | null) => void
   onDeleteAll: () => void
+  onShareNotes: (videoId: string | null) => void
 }
 
 const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' })
@@ -23,7 +24,7 @@ function formatBytes(bytes: number): string {
 const rowKey = (n: SavedNotes) => n.videoId ?? '_scratch'
 
 /** Overlay listing every saved set of notes in this browser, to reopen or delete them. */
-export function NotesBrowser({ open, currentVideoId, onClose, onOpenNotes, onDeleteNotes, onDeleteAll }: Props) {
+export function NotesBrowser({ open, currentVideoId, onClose, onOpenNotes, onDeleteNotes, onDeleteAll, onShareNotes }: Props) {
   const [version, setVersion] = useState(0)
   const [confirming, setConfirming] = useState<string | null>(null)
   const listRef = useRef<HTMLUListElement>(null)
@@ -157,15 +158,26 @@ export function NotesBrowser({ open, currentVideoId, onClose, onOpenNotes, onDel
                       </button>
                     </>
                   ) : (
-                    <button
-                      type="button"
-                      className="btn btn-icon btn-ghost"
-                      aria-label={`Delete notes for ${n.title}`}
-                      title="Delete these notes"
-                      onClick={() => setConfirming(key)}
-                    >
-                      <Trash2 aria-hidden="true" size={17} />
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        className="btn btn-icon btn-ghost"
+                        aria-label={`Copy share link for ${n.title}`}
+                        title="Copy a link that shares these notes"
+                        onClick={() => onShareNotes(n.videoId)}
+                      >
+                        <Share aria-hidden="true" size={17} />
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-icon btn-ghost"
+                        aria-label={`Delete notes for ${n.title}`}
+                        title="Delete these notes"
+                        onClick={() => setConfirming(key)}
+                      >
+                        <Trash2 aria-hidden="true" size={17} />
+                      </button>
+                    </>
                   )}
                 </div>
               </li>

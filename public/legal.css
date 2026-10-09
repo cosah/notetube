@@ -89,6 +89,7 @@ a {
 
 .site-header nav {
   display: flex;
+  align-items: center;
   gap: 16px;
   font-size: 15px;
 }
@@ -193,4 +194,17 @@ code {
   padding: 0 16px 40px;
   color: var(--text-muted);
   font-size: 14px;
+}
+
+.github-link {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: var(--text);
+}
+
+.github-link:hover {
+  background: var(--surface-2);
 }
